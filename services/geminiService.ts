@@ -1,14 +1,9 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from '../types';
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  throw new Error("API_KEY environment variable not set.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// The API key is expected to be injected by the execution environment.
+// Initializing the client directly without a blocking check allows the app to load.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const iocsSchema = {
   type: Type.OBJECT,
