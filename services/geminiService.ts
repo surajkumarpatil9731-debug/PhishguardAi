@@ -10,6 +10,46 @@ if (!API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
+const iocsSchema = {
+  type: Type.OBJECT,
+  properties: {
+    urls: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Any URLs or domains found in the content."
+    },
+    emails: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Any email addresses found in the content."
+    }
+  },
+  required: ["urls", "emails"]
+};
+
+const tacticsSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      tactic: {
+        type: Type.STRING,
+        description: "The name of the phishing tactic being analyzed (e.g., 'Urgency', 'Suspicious Link', 'Sender Impersonation', 'Unusual Request')."
+      },
+      description: {
+        type: Type.STRING,
+        description: "A very brief explanation of why this tactic was or was not detected."
+      },
+      detected: {
+        type: Type.BOOLEAN,
+        description: "A boolean indicating if this specific tactic was detected."
+      }
+    },
+    required: ["tactic", "description", "detected"]
+  }
+};
+
+
 const analysisSchema = {
   type: Type.OBJECT,
   properties: {
@@ -23,19 +63,32 @@ const analysisSchema = {
     },
     reason: {
       type: Type.STRING,
-      description: "A brief, user-friendly explanation for the classification and score.",
+      description: "A brief, user-friendly summary explanation for the overall classification and score.",
     },
+    tactics: tacticsSchema,
+    iocs: iocsSchema,
+    recommendation: {
+      type: Type.STRING,
+      description: "A clear, actionable recommendation for the user (e.g., 'Delete this email immediately and do not click links.')."
+    }
   },
-  required: ["riskLevel", "score", "reason"],
+  required: ["riskLevel", "score", "reason", "tactics", "iocs", "recommendation"],
 };
+
 
 export const analyzeContent = async (text: string): Promise<AnalysisResult> => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Analyze the following content for phishing risks. Consider elements like suspicious links, urgent language, grammatical errors, sender identity, and unusual requests. Based on your analysis, provide a risk classification, a numerical risk score, and a brief reason. The user submitted content is: "${text}"`,
+      contents: `Perform a detailed phishing analysis on the following content.
+      1.  **Overall Assessment**: Provide a risk level ('Safe', 'Suspicious', 'Malicious'), a risk score (0-100), and a concise summary reason.
+      2.  **Tactic Analysis**: Analyze for the presence of the following specific tactics: 'Urgency', 'Suspicious Link', 'Sender Impersonation', and 'Unusual Request'. For each tactic, indicate if it was detected (boolean) and provide a brief justification.
+      3.  **IOC Extraction**: Extract all URLs and email addresses from the content. If none are present, return empty arrays.
+      4.  **Recommendation**: Provide a single, clear, actionable recommendation for the user.
+
+      The user submitted content is: "${text}"`,
       config: {
-        systemInstruction: "You are a cybersecurity expert specializing in phishing detection. Your goal is to analyze user-submitted content (URLs, emails, messages) and provide a clear, concise, and accurate risk assessment. Respond ONLY with the JSON object defined in the schema.",
+        systemInstruction: "You are a cybersecurity expert specializing in phishing detection. Your goal is to analyze user-submitted content and provide a structured, detailed risk assessment. Respond ONLY with the JSON object defined in the schema.",
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
       },

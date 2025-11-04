@@ -26,12 +26,21 @@ const App: React.FC = () => {
 
     try {
       const result = await analyzeContent(inputText);
-      // Basic validation
+      // More detailed validation
       if (!Object.values(RiskLevel).includes(result.riskLevel)) {
         throw new Error("Received an invalid risk level from the AI.");
       }
       if (typeof result.score !== 'number' || result.score < 0 || result.score > 100) {
         throw new Error("Received an invalid score from the AI.");
+      }
+      if (!result.tactics || !Array.isArray(result.tactics)) {
+        throw new Error("AI response missing 'tactics' analysis.");
+      }
+      if (!result.iocs || typeof result.iocs !== 'object' || !Array.isArray(result.iocs.urls) || !Array.isArray(result.iocs.emails)) {
+        throw new Error("AI response missing 'IOCs' analysis.");
+      }
+      if (typeof result.recommendation !== 'string' || result.recommendation.length === 0) {
+          throw new Error("AI response missing 'recommendation'.");
       }
 
       setCurrentResult(result);
