@@ -1,0 +1,5 @@
+{
+  "name": "Copy of PhishGuard AI",
+  "description": "An AI-powered application to detect and analyze phishing content from URLs, messages, and emails, providing a risk classification and visual analysis.",
+  "requestFramePermissions": []
+}
